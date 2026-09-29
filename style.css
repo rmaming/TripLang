@@ -1,9 +1,9 @@
 :root {
-  --bg: #f5f5f4;
+  --bg: #faf7f2;
   --card: #ffffff;
   --text: #1c1917;
   --muted: #78716c;
-  --line: #e7e5e4;
+  --line: #ece6dc;
   --accent: #0f766e;
   --accent-soft: #ccfbf1;
   --danger: #b91c1c;
@@ -177,3 +177,79 @@ main { max-width: 640px; margin: 0 auto; padding: 16px; }
   position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%);
   background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 999px; z-index: 50; font-size: 14px;
 }
+
+/* ---------- Journal ---------- */
+.serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+
+/* Trip cards on the home screen */
+.trip-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; cursor: pointer; }
+.trip-cover {
+  position: relative; aspect-ratio: 16 / 9; display: grid; place-items: center;
+  background: linear-gradient(135deg, #0f766e, #134e4a) center/cover;
+}
+.cover-emoji { font-size: 48px; opacity: .6; }
+.trip-cover-text {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 32px 16px 12px; color: #fff;
+  background: linear-gradient(transparent, rgba(0,0,0,.65)); font-size: 14px;
+}
+.trip-name { font-size: 24px; font-weight: 700; line-height: 1.15; }
+.trip-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 16px; }
+
+/* Trip header */
+.hero {
+  position: relative; margin: -16px -16px 0; min-height: 190px;
+  background: linear-gradient(135deg, #0f766e, #134e4a) center/cover;
+  display: flex; align-items: flex-end;
+}
+.hero-text { width: 100%; padding: 48px 16px 16px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.6)); font-size: 14px; }
+.hero h2 { margin: 0 0 4px; font-size: 28px; line-height: 1.15; }
+.stat-row {
+  display: grid; grid-template-columns: 1fr 1fr 1.4fr; margin: -14px 8px 16px; position: relative;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+.stat-row div { padding: 10px 6px; text-align: center; display: flex; flex-direction: column; min-width: 0; }
+.stat-row div + div { border-left: 1px solid var(--line); }
+.stat-row b { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat-row span { font-size: 12px; color: var(--muted); }
+
+/* Days & memos */
+.day { margin-bottom: 24px; }
+.day-title { display: flex; align-items: baseline; gap: 10px; margin: 0 4px 10px; }
+.day-title .serif { font-size: 22px; font-weight: 700; color: var(--accent); }
+.entry { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; cursor: pointer; }
+.entry-body { padding: 14px 16px; }
+.entry-body > :last-child { margin-bottom: 0; }
+.entry-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.entry-icons { font-size: 18px; white-space: nowrap; }
+.entry h3 { margin: 0 0 6px; font-size: 19px; line-height: 1.25; }
+.entry-text { margin: 0; white-space: pre-wrap; line-height: 1.55; font-size: 15px; }
+.gallery { display: grid; gap: 2px; }
+.gallery.g1 { grid-template-columns: 1fr; }
+.gallery.g1 .ph { aspect-ratio: 4 / 3; }
+.gallery.g2 { grid-template-columns: 1fr 1fr; }
+.gallery.g3 { grid-template-columns: 1fr 1fr 1fr; }
+.gallery .ph, .strip .ph { aspect-ratio: 1; background: var(--line) center/cover; position: relative; }
+.gallery .more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.45); color: #fff; font-size: 22px; font-weight: 600; }
+.strip { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; }
+.strip .ph { flex: 0 0 96px; border-radius: 10px; cursor: pointer; }
+.spent-line {
+  display: flex; gap: 6px; align-items: center; font-size: 14px; color: var(--muted);
+  padding: 10px 14px; border: 1px dashed var(--line); border-radius: 12px; cursor: pointer;
+}
+.spent-line b { color: var(--text); }
+.spent-line span { margin-left: auto; font-size: 18px; }
+
+/* Memo form */
+.title-input { font-size: 20px !important; font-weight: 600; border: 0 !important; background: transparent !important; padding: 4px 0 !important; }
+.field textarea { line-height: 1.5; resize: vertical; }
+.emoji-chip { font-size: 22px; padding: 6px 10px; }
+.chip.emoji-chip.active { background: var(--accent-soft); border-color: var(--accent); }
+.pic-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.pic { flex: 0 0 76px; height: 76px; border-radius: 12px; background: var(--line) center/cover; position: relative; }
+.pic button {
+  position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; border: 0;
+  background: rgba(0,0,0,.6); color: #fff; font-size: 11px; cursor: pointer; padding: 0;
+}
+.add-pic { border: 1.5px dashed var(--muted); background: var(--bg); color: var(--muted); font-size: 22px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.add-pic small { font-size: 11px; }
+.tabs button { font-size: 14px; padding: 8px 4px; }

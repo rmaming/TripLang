@@ -1,19 +1,19 @@
-# TripLang 🧳
+# TripLang 📔
 
-A simple personal app for tracking trip expenses and saving photos of the places you visit.
-It runs on your phone as an installable web app (PWA): no app store, it works offline, and
-all your data stays on your phone.
+A personal travel journal for your phone. Write memos about each day, save photos of the places you visit,
+and keep track of what you spend. It installs from a web link (a PWA): no app store, it works offline,
+and all your data stays on your phone.
 
 ![Screenshots](screenshots.png)
 
 ## Features
 
-- **Trips**: one per journey, each with its own currency and an optional budget
-- **Total spent**: shown at the top, with a budget progress bar and how much is left or over
-- **Expenses**: amount, category (Food, Transport, Stay, Activities, Shopping, Other), note and date, grouped by day with daily totals. Tap an expense to edit or delete it.
-- **Photos**: add pictures from your camera or gallery, tag each one with the place and a caption. They are resized automatically to save space.
-- **Summary**: spending by category, average per day and your biggest expense
-- **Export**: download a trip's expenses as CSV (opens in Excel or Google Sheets)
+- **Journals**: each trip has a cover photo, destination, dates, currency and an optional budget
+- **Day-by-day journal**: memos grouped as *Day 1, Day 2…*, each with a title, story, place, time, mood 🤩 and weather ☀️, plus photos
+- **Photos**: attach several photos to a memo, or add loose photos to a day. Tag them with the place and a caption and pick your favorite as the trip cover. Photos are resized automatically to save space.
+- **Expenses**: amount, category, note and date, with the total spent, budget left, and each day's spending shown in the journal
+- **Summary**: spending by category, average per day, your biggest expense, the overall trip mood, and every place you visited
+- **Share and export**: share the journal as text (to Messages, Notes and so on) or export expenses as CSV
 - **Backup and restore**: save everything, including photos, to one file and restore it on a new phone
 - **Offline**: works abroad without mobile data
 - **Dark mode**: follows your phone's setting

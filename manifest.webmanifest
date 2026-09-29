@@ -1,10 +1,10 @@
 {
-  "name": "TripLang – Trip Expenses",
+  "name": "TripLang – Travel Journal",
   "short_name": "TripLang",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f5f5f4",
+  "background_color": "#faf7f2",
   "theme_color": "#0f766e",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
