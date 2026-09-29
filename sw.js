@@ -1,5 +1,5 @@
 // Caches the app so it opens offline (e.g. abroad without data).
-const CACHE = 'triplang-v2';
+const CACHE = 'triplang-v3';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
