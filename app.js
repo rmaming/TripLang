@@ -57,6 +57,29 @@ const MOODS = ['🤩', '😊', '😌', '😋', '😴', '😫', '🥲'];
 const WEATHER = ['☀️', '⛅', '☁️', '🌧️', '⛈️', '❄️', '🌙'];
 const CURRENCIES = ['PHP', 'USD', 'EUR', 'JPY', 'KRW', 'SGD', 'THB', 'VND', 'IDR', 'MYR', 'HKD', 'TWD', 'CNY', 'AUD', 'GBP', 'CAD'];
 
+// Line icons (24x24, stroke).
+const ICONS = {
+  back: '<path d="M19 12H5M12 19l-7-7 7-7"/>',
+  dots: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+  wallet: '<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+  chart: '<path d="M5 20V11M12 20V4M19 20v-6"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21 7 14.2 2 9.3l6.9-1z"/>',
+  share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>',
+  arrow: '<path d="M5 12h14M12 5l7 7-7 7"/>',
+  chevron: '<path d="m9 18 6-6-6-6"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>',
+};
+const icon = (name) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
+
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -65,6 +88,8 @@ const nowTime = () => new Date().toTimeString().slice(0, 5);
 const cat = (id) => CATEGORIES.find((c) => c.id === id) || CATEGORIES[CATEGORIES.length - 1];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = (list) => list.reduce((s, e) => s + e.amount, 0);
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const bg = (blob) => (blob ? `style="background-image:url(${blobUrl(blob)})"` : '');
 
 function money(n, currency) {
   try {
@@ -75,6 +100,11 @@ function money(n, currency) {
 }
 function prettyDate(d, opts = { weekday: 'short', month: 'short', day: 'numeric' }) {
   return new Date(d + 'T00:00').toLocaleDateString(undefined, opts);
+}
+function addDays(d, n) {
+  const x = new Date(d + 'T00:00');
+  x.setDate(x.getDate() + n);
+  return x.toLocaleDateString('en-CA');
 }
 function dateRange(trip) {
   if (!trip.startDate) return '';
@@ -90,6 +120,21 @@ function dayNumber(trip, date) {
   if (!trip.startDate) return null;
   const n = Math.round((new Date(date) - new Date(trip.startDate)) / 864e5) + 1;
   return n >= 1 ? n : null;
+}
+function tripStatus(trip) {
+  const d = today();
+  if (trip.startDate && trip.startDate > d) return 'upcoming';
+  if ((trip.endDate || trip.startDate || d) < d) return 'past';
+  return 'now';
+}
+function statusText(trip) {
+  const s = tripStatus(trip);
+  if (s === 'now') return '● Traveling now';
+  if (s === 'upcoming') {
+    const n = Math.round((new Date(trip.startDate) - new Date(today())) / 864e5);
+    return n === 1 ? 'Starts tomorrow' : `In ${n} days`;
+  }
+  return 'Memories';
 }
 function toast(msg) {
   const el = document.createElement('div');
@@ -128,9 +173,10 @@ function blobUrl(blob) {
 }
 
 // ---------- State & routing ----------
-const state = { tripId: null, tab: 'journal' };
+const state = { tripId: null, tab: 'journal', day: '', filter: 'all' };
 
 function go(tripId, tab) {
+  if (tripId !== state.tripId) state.day = '';
   state.tripId = tripId;
   if (tab) state.tab = tab;
   location.hash = tripId ? `trip/${tripId}/${state.tab}` : '';
@@ -161,184 +207,302 @@ function coverOf(trip, photos) {
 }
 
 async function renderHome() {
-  $('#title').textContent = 'My Journals';
-  $('#backBtn').hidden = true;
+  $('#nav').hidden = true;
+  $('#fab').hidden = false;
+  $('#fab').innerHTML = `${icon('plus')} New journey`;
   const [trips, expenses, photos, entries] = await Promise.all(['trips', 'expenses', 'photos', 'entries'].map(db.all));
-  trips.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || '') || b.createdAt - a.createdAt);
+  const rank = { now: 0, upcoming: 1, past: 2 };
+  trips.sort((a, b) => rank[tripStatus(a)] - rank[tripStatus(b)] || (b.startDate || '').localeCompare(a.startDate || '') || b.createdAt - a.createdAt);
+
+  const name = localStorage.getItem('name') || '';
+  const top = `
+    <div class="home-top">
+      <button class="avatar" id="nameBtn" aria-label="Your name">${esc((name[0] || '✈').toUpperCase())}</button>
+      <button class="greet" id="greetBtn">Hi, ${esc(name || 'traveler')} 👋</button>
+      <button class="circle" id="menuBtn" aria-label="Menu">${icon('dots')}</button>
+    </div>
+    <div class="label muted">${icon('book')} Travel journal</div>
+    <h1 class="big-title">Your<br>Journeys</h1>`;
 
   if (!trips.length) {
-    $('#app').innerHTML = `<div class="empty"><div style="font-size:52px">📔</div>
-      <p class="serif" style="font-size:20px"><b>Your travel journal</b></p>
-      <p>Write memories, save photos, and keep track of what you spend.<br>Tap <b>+</b> to start your first trip.</p></div>`;
+    $('#app').innerHTML = top + `<div class="feature" id="firstTrip"><span class="cover-emoji">🏔️</span><div class="shade"></div>
+      <div class="inner"><div class="label">Start here</div><h2>Your first adventure</h2>
+        <div class="meta"><span>Write memories · save photos · track spending</span></div>
+        <span class="pill outline">Create a journey</span></div></div>`;
+    $('#firstTrip').onclick = () => tripForm();
+    bindHome();
     return;
   }
-  $('#app').innerHTML = trips.map((t) => {
-    const cover = coverOf(t, photos.filter((p) => p.tripId === t.id));
-    const nEntries = entries.filter((e) => e.tripId === t.id).length;
-    const days = tripDays(t);
-    const bits = [dateRange(t), days ? `${days} day${days > 1 ? 's' : ''}` : '', `${nEntries} memo${nEntries === 1 ? '' : 's'}`].filter(Boolean);
-    return `<article class="trip-card" data-id="${t.id}">
-      <div class="trip-cover" ${cover ? `style="background-image:url(${blobUrl(cover.blob)})"` : ''}>
-        ${cover ? '' : '<span class="cover-emoji">✈️</span>'}
-        <div class="trip-cover-text"><div class="serif trip-name">${esc(t.name)}</div>
-          ${t.destination ? `<div>📍 ${esc(t.destination)}</div>` : ''}</div>
+
+  const filters = [['all', 'All'], ['now', 'Now'], ['upcoming', 'Upcoming'], ['past', 'Past']]
+    .filter(([id]) => id === 'all' || trips.some((t) => tripStatus(t) === id));
+  if (!filters.some(([id]) => id === state.filter)) state.filter = 'all';
+  const shown = trips.filter((t) => state.filter === 'all' || tripStatus(t) === state.filter);
+  const [feat, ...rest] = shown;
+
+  const stats = (t) => ({
+    photos: photos.filter((p) => p.tripId === t.id),
+    memos: entries.filter((e) => e.tripId === t.id).length,
+    spent: sum(expenses.filter((e) => e.tripId === t.id)),
+  });
+  const f = stats(feat);
+  const fCover = coverOf(feat, f.photos);
+  const days = tripDays(feat);
+
+  $('#app').innerHTML = top + `
+    <div class="pill-row">${filters.map(([id, label]) => `<button class="pill ${state.filter === id ? 'active' : ''}" data-filter="${id}">${label}</button>`).join('')}</div>
+    <article class="feature" data-trip="${feat.id}" ${bg(fCover?.blob)}>
+      ${fCover ? '' : '<span class="cover-emoji">✈️</span>'}
+      <div class="shade"></div>
+      <span class="pill glass badge">${statusText(feat)}</span>
+      <div class="inner">
+        ${feat.destination ? `<div class="label">${icon('pin')} ${esc(feat.destination)}</div>` : ''}
+        <h2>${esc(feat.name)}</h2>
+        <div class="meta">
+          ${days ? `<span>${icon('calendar')} ${plural(days, 'day')}</span>` : feat.startDate ? `<span>${icon('calendar')} ${dateRange(feat)}</span>` : ''}
+          <span>${icon('book')} ${plural(f.memos, 'memo')}</span>
+          <span>${icon('wallet')} ${money(f.spent, feat.currency)}</span>
+        </div>
+        <span class="pill outline">Open journal ${icon('arrow')}</span>
       </div>
-      <div class="trip-foot"><span class="muted">${bits.join(' · ')}</span>
-        <b>${money(sum(expenses.filter((e) => e.tripId === t.id)), t.currency)}</b></div>
-    </article>`;
-  }).join('');
-  $$('.trip-card').forEach((el) => (el.onclick = () => go(el.dataset.id, 'journal')));
+    </article>
+    ${rest.length ? `<div class="section-head"><h3>More journeys</h3><span class="muted">${rest.length}</span></div>
+      <div class="grid2">${rest.map((t) => {
+        const s = stats(t);
+        const c = coverOf(t, s.photos);
+        return `<article class="tile" data-trip="${t.id}" ${bg(c?.blob)}>
+          ${c ? '' : '<span class="cover-emoji">✈️</span>'}
+          <div class="txt">${t.destination ? `<div class="label">${esc(t.destination)}</div>` : ''}
+            <div class="name">${esc(t.name)}</div>
+            <div class="sub">${[t.startDate && prettyDate(t.startDate, { month: 'short', year: 'numeric' }), money(s.spent, t.currency)].filter(Boolean).join(' · ')}</div></div>
+        </article>`;
+      }).join('')}</div>` : ''}`;
+
+  $$('[data-trip]').forEach((el) => (el.onclick = () => go(el.dataset.trip, 'journal')));
+  $$('[data-filter]').forEach((el) => (el.onclick = () => { state.filter = el.dataset.filter; render(); }));
+  bindHome();
+}
+
+function bindHome() {
+  $('#menuBtn').onclick = openMenu;
+  $('#nameBtn').onclick = $('#greetBtn').onclick = nameForm;
 }
 
 async function renderTrip(trip) {
-  $('#title').textContent = '';
-  $('#backBtn').hidden = false;
+  $('#fab').hidden = true;
   const [expenses, photos, entries] = await Promise.all(['expenses', 'photos', 'entries'].map((s) => db.byTrip(s, trip.id)));
-  const total = sum(expenses);
   const cover = coverOf(trip, photos);
   const ctx = { trip, expenses, photos, entries };
-
-  const tabs = [['journal', 'Journal'], ['expenses', 'Expenses'], ['photos', 'Photos'], ['summary', 'Summary']];
   const views = { journal: journalView, expenses: expensesView, photos: photosView, summary: summaryView };
-  const body = (views[state.tab] || journalView)(ctx);
+  if (!views[state.tab]) state.tab = 'journal';
+  const days = tripDays(trip);
 
   $('#app').innerHTML = `
-    <header class="hero" ${cover ? `style="background-image:url(${blobUrl(cover.blob)})"` : ''}>
-      <div class="hero-text">
-        <h2 class="serif">${esc(trip.name)}</h2>
-        <div>${[trip.destination && '📍 ' + esc(trip.destination), dateRange(trip)].filter(Boolean).join(' · ')}</div>
-      </div>
-    </header>
-    <div class="stat-row">
-      <div><b>${entries.length}</b><span>memos</span></div>
-      <div><b>${photos.length}</b><span>photos</span></div>
-      <div><b>${money(total, trip.currency)}</b><span>spent</span></div>
+    <div class="hero-wrap">
+      <header class="hero" ${bg(cover?.blob)}>
+        ${cover ? '' : '<span class="cover-emoji">🏔️</span>'}
+        <div class="hero-bar">
+          <button class="circle glass" id="backBtn" aria-label="Back">${icon('back')}</button>
+          <span class="spacer"></span>
+          <button class="circle glass" id="shareBtn" aria-label="Share journal">${icon('share')}</button>
+          <button class="circle glass" id="menuBtn" aria-label="Menu">${icon('dots')}</button>
+        </div>
+        <div class="txt">
+          ${trip.destination ? `<div class="label">${icon('pin')} ${esc(trip.destination)}</div>` : `<div class="label">${statusText(trip)}</div>`}
+          <h1>${esc(trip.name)}</h1>
+          ${trip.startDate ? `<button class="dates" id="datesBtn">${dateRange(trip)} ${icon('chevron')}</button>` : ''}
+        </div>
+      </header>
+      <button class="circle dark hero-action" id="editBtn" aria-label="Edit trip">${icon('edit')}</button>
     </div>
-    <div class="tabs">${tabs.map(([id, label]) => `<button data-tab="${id}" class="${state.tab === id ? 'active' : ''}">${label}</button>`).join('')}</div>
-    ${body}`;
+    <div class="pill-row info-row">
+      ${days ? `<span class="pill">${icon('calendar')} ${plural(days, 'day')}</span>` : ''}
+      <span class="pill">${icon('book')} ${plural(entries.length, 'memo')}</span>
+      <span class="pill">${icon('image')} ${plural(photos.length, 'photo')}</span>
+      <span class="pill">${icon('wallet')} ${money(sum(expenses), trip.currency)}</span>
+    </div>
+    ${views[state.tab](ctx)}`;
 
-  $$('.tabs button').forEach((b) => (b.onclick = () => go(trip.id, b.dataset.tab)));
+  const tabs = [['journal', 'book', 'Journal'], ['expenses', 'wallet', 'Expenses'], ['add', 'plus', 'Add'], ['photos', 'image', 'Photos'], ['summary', 'chart', 'Summary']];
+  $('#nav').hidden = false;
+  $('#nav').innerHTML = tabs.map(([id, ic, label]) =>
+    `<button data-tab="${id}" class="${id === 'add' ? 'add' : state.tab === id ? 'active' : ''}" aria-label="${label}">${icon(ic)}</button>`).join('');
+  $$('#nav button').forEach((b) => (b.onclick = () => (b.dataset.tab === 'add' ? addFor(trip) : go(trip.id, b.dataset.tab))));
+
+  $('#backBtn').onclick = () => go(null);
+  $('#menuBtn').onclick = openMenu;
+  $('#shareBtn').onclick = () => exportJournal(trip);
+  $('#editBtn').onclick = () => tripForm(trip);
+  if ($('#datesBtn')) $('#datesBtn').onclick = () => tripForm(trip);
+  $$('[data-day]').forEach((el) => (el.onclick = () => { state.day = el.dataset.day; render(); }));
   $$('[data-exp]').forEach((el) => (el.onclick = () => expenseForm(trip, expenses.find((e) => e.id === el.dataset.exp))));
   $$('[data-entry]').forEach((el) => (el.onclick = () => entryForm(trip, entries.find((e) => e.id === el.dataset.entry))));
   $$('[data-photo]').forEach((el) => (el.onclick = (ev) => {
     ev.stopPropagation();
     openViewer(trip, photos.find((p) => p.id === el.dataset.photo));
   }));
+  $$('[data-cover]').forEach((el) => (el.onclick = async (ev) => {
+    ev.stopPropagation();
+    await db.put('trips', { ...trip, coverPhotoId: el.dataset.cover });
+    toast('Cover photo updated');
+    render();
+  }));
   $$('[data-goto]').forEach((el) => (el.onclick = () => go(trip.id, el.dataset.goto)));
 }
 
-// Journal: one section per day with memos, loose photos, and that day's spending.
+// Journal: day picker, then one section per day with memos, loose photos and that day's spending.
 function journalView({ trip, expenses, photos, entries }) {
-  const days = new Set([...entries, ...expenses].map((x) => x.date));
-  photos.filter((p) => !p.entryId).forEach((p) => days.add(p.date));
-  if (!days.size) {
-    return `<div class="empty"><div style="font-size:40px">✍️</div>
-      <p class="serif" style="font-size:18px">Every trip has a story.</p><p>Tap <b>+</b> to write your first memo.</p></div>`;
+  const withContent = new Set([...entries, ...expenses].map((x) => x.date));
+  photos.filter((p) => !p.entryId).forEach((p) => withContent.add(p.date));
+  if (!withContent.size) {
+    return `<div class="empty"><div class="big-emoji">✍️</div><h3>Every trip has a story</h3>
+      <p>Tap <b>+</b> below to write your first memo.</p></div>`;
   }
-  return [...days].sort().map((day) => {
-    const n = dayNumber(trip, day);
+
+  // Day strip: every day of the trip when dates are set, plus any other days that have content.
+  const strip = new Set(withContent);
+  const n = tripDays(trip);
+  if (n > 0 && n <= 60) for (let i = 0; i < n; i++) strip.add(addDays(trip.startDate, i));
+  const stripDays = [...strip].sort();
+  if (state.day && !strip.has(state.day)) state.day = '';
+
+  const dayStrip = `<div class="days">
+    <button class="day-chip all ${state.day ? '' : 'active'}" data-day=""><b>All</b></button>
+    ${stripDays.map((d) => `<button class="day-chip ${state.day === d ? 'active' : ''}" data-day="${d}">
+      ${prettyDate(d, { weekday: 'short' })}<b>${prettyDate(d, { day: 'numeric' })}</b>
+      <span class="dot ${withContent.has(d) ? '' : 'none'}"></span></button>`).join('')}
+  </div>`;
+
+  const shown = [...withContent].filter((d) => !state.day || d === state.day).sort();
+  const sections = shown.length ? shown.map((day) => {
+    const num = dayNumber(trip, day);
     const dayEntries = entries.filter((e) => e.date === day).sort((a, b) => (a.time || '').localeCompare(b.time || '') || a.createdAt - b.createdAt);
     const loose = photos.filter((p) => !p.entryId && p.date === day);
     const spent = expenses.filter((e) => e.date === day);
     return `<section class="day">
-      <div class="day-title"><span class="serif">${n ? `Day ${n}` : prettyDate(day, { month: 'short', day: 'numeric' })}</span>
-        <span class="muted">${prettyDate(day)}</span></div>
+      <div class="day-title"><h3>${num ? `Day ${num}` : prettyDate(day, { month: 'short', day: 'numeric' })}</h3>
+        <span class="pill">${icon('calendar')} ${prettyDate(day)}</span></div>
       ${dayEntries.map((e) => entryCard(e, photos.filter((p) => p.entryId === e.id))).join('')}
-      ${loose.length ? `<div class="strip">${loose.map((p) => `<div class="ph" data-photo="${p.id}" style="background-image:url(${blobUrl(p.blob)})"></div>`).join('')}</div>` : ''}
-      ${spent.length ? `<div class="spent-line" data-goto="expenses">💸 Spent <b>${money(sum(spent), trip.currency)}</b> · ${spent.length} item${spent.length > 1 ? 's' : ''}<span>›</span></div>` : ''}
+      ${loose.length ? `<div class="strip">${loose.map((p) => `<div class="ph" data-photo="${p.id}" ${bg(p.blob)}></div>`).join('')}</div>` : ''}
+      ${spent.length ? `<div class="spent-line" data-goto="expenses">💸 <span><b>${money(sum(spent), trip.currency)}</b> spent · ${plural(spent.length, 'item')}</span>
+        <span class="circle dark">${icon('arrow')}</span></div>` : ''}
     </section>`;
-  }).join('');
+  }).join('') : `<div class="empty"><div class="big-emoji">🌤️</div><h3>Nothing here yet</h3><p>Tap <b>+</b> to add a memo for this day.</p></div>`;
+  return dayStrip + sections;
 }
 
 function entryCard(e, pics) {
-  const meta = [e.time, e.place && `📍 ${esc(e.place)}`].filter(Boolean).join(' · ');
-  const icons = [e.mood, e.weather].filter(Boolean).join(' ');
-  const gallery = pics.length
-    ? `<div class="gallery g${Math.min(pics.length, 3)}">${pics.slice(0, 6).map((p, i) =>
-        `<div class="ph" data-photo="${p.id}" style="background-image:url(${blobUrl(p.blob)})">${i === 5 && pics.length > 6 ? `<span class="more">+${pics.length - 6}</span>` : ''}</div>`).join('')}</div>`
-    : '';
-  return `<article class="entry" data-entry="${e.id}">
-    ${gallery}
-    <div class="entry-body">
-      ${meta || icons ? `<div class="entry-meta"><span>${meta}</span><span class="entry-icons">${icons}</span></div>` : ''}
-      ${e.title ? `<h3 class="serif">${esc(e.title)}</h3>` : ''}
+  const chips = [
+    e.time && `<span class="mini">${icon('clock')} ${esc(e.time)}</span>`,
+    e.mood && `<span class="mini">${e.mood} Mood</span>`,
+    e.weather && `<span class="mini">${e.weather} Weather</span>`,
+  ].filter(Boolean).join('');
+  const place = e.place ? `<div class="label">${icon('pin')} ${esc(e.place)}</div>` : '';
+  if (!pics.length) {
+    return `<article class="entry text-only" data-entry="${e.id}"><div class="body">
+      ${place}${e.title ? `<h4>${esc(e.title)}</h4>` : ''}
       ${e.text ? `<p class="entry-text">${esc(e.text)}</p>` : ''}
+      ${chips ? `<div class="chips-row">${chips}</div>` : ''}</div></article>`;
+  }
+  const [first, ...others] = pics;
+  return `<article class="entry" data-entry="${e.id}">
+    <div class="photo" data-photo="${first.id}" ${bg(first.blob)}>
+      ${pics.length > 1 ? `<span class="pill glass count">${icon('image')} ${pics.length}</span>` : ''}
+      <div class="over">${place}${e.title ? `<h4>${esc(e.title)}</h4>` : ''}</div>
     </div>
+    ${others.length ? `<div class="thumbs">${others.slice(0, 4).map((p, i) =>
+      `<div class="ph" data-photo="${p.id}" ${bg(p.blob)}>${i === 3 && others.length > 4 ? `<span class="more">+${others.length - 4}</span>` : ''}</div>`).join('')}</div>` : ''}
+    ${e.text || chips ? `<div class="body">${e.text ? `<p class="entry-text">${esc(e.text)}</p>` : ''}
+      ${chips ? `<div class="chips-row">${chips}</div>` : ''}</div>` : ''}
   </article>`;
 }
 
 function expensesView({ trip, expenses }) {
   const total = sum(expenses);
-  let budgetHtml = '';
-  if (trip.budget) {
-    const pct = Math.min(100, (total / trip.budget) * 100);
-    const left = trip.budget - total;
-    budgetHtml = `<div class="sub"><span>Budget ${money(trip.budget, trip.currency)}</span>
-      <span>${left >= 0 ? money(left, trip.currency) + ' left' : money(-left, trip.currency) + ' over!'}</span></div>
-      <div class="progress ${left < 0 ? 'over' : ''}"><div style="width:${pct}%"></div></div>`;
-  }
-  const head = `<div class="card total-card"><div class="label">Total spent</div>
-    <div class="amount">${money(total, trip.currency)}</div>${budgetHtml}</div>`;
-  if (!expenses.length) return head + `<div class="empty">No expenses yet.<br>Tap <b>+</b> to add one.</div>`;
+  const days = new Set(expenses.map((e) => e.date)).size;
+  const left = trip.budget ? trip.budget - total : null;
+  const ticket = `<div class="ticket">
+    <div class="side"><span>SPENT</span><span class="circle dark">${icon('wallet')}</span></div>
+    <div class="main">
+      <div class="top"><div class="muted">Total spent</div>
+        <div class="amount">${money(total, trip.currency)}</div>
+        ${trip.budget ? `<div class="progress ${left < 0 ? 'over' : ''}"><div style="width:${Math.min(100, (total / trip.budget) * 100)}%"></div></div>` : ''}
+      </div>
+      <div class="bottom">
+        <div><small>Budget</small><b>${trip.budget ? money(trip.budget, trip.currency) : '—'}</b></div>
+        <div><small>${left !== null && left < 0 ? 'Over' : 'Left'}</small><b>${left !== null ? money(Math.abs(left), trip.currency) : '—'}</b></div>
+        <div><small>Per day</small><b>${days ? money(total / days, trip.currency) : '—'}</b></div>
+      </div>
+    </div></div>`;
+  if (!expenses.length) return ticket + `<div class="empty"><div class="big-emoji">💸</div><h3>No expenses yet</h3><p>Tap <b>+</b> to add one.</p></div>`;
 
   const byDay = {};
   expenses.forEach((e) => (byDay[e.date] ||= []).push(e));
-  return head + Object.keys(byDay).sort().reverse().map((day) => {
-    const items = byDay[day].sort((a, b) => b.createdAt - a.createdAt);
-    const n = dayNumber(trip, day);
-    return `<div class="day-head"><span>${n ? `Day ${n} · ` : ''}${prettyDate(day)}</span><span>${money(sum(items), trip.currency)}</span></div>
-      <div class="card list-card">${items.map((e) => `
-        <div class="exp" data-exp="${e.id}">
+  return ticket + `<div class="section-head"><h3>Transactions</h3><span class="muted">${expenses.length}</span></div>` +
+    Object.keys(byDay).sort().reverse().map((day) => {
+      const items = byDay[day].sort((a, b) => b.createdAt - a.createdAt);
+      const n = dayNumber(trip, day);
+      return `<div class="day-head"><span>${n ? `Day ${n} · ` : ''}${prettyDate(day)}</span><span>${money(sum(items), trip.currency)}</span></div>
+        ${items.map((e) => `<div class="exp" data-exp="${e.id}">
           <div class="emoji">${cat(e.category).emoji}</div>
-          <div class="info"><div class="note">${esc(e.note) || cat(e.category).label}</div>
-            <div class="muted">${cat(e.category).label}</div></div>
-          <div class="amt">${money(e.amount, trip.currency)}</div>
-        </div>`).join('')}</div>`;
-  }).join('');
+          <div class="info"><div class="note">${esc(e.note) || cat(e.category).label}</div><div class="muted">${cat(e.category).label}</div></div>
+          <div class="amt">${money(e.amount, trip.currency)}</div></div>`).join('')}`;
+    }).join('');
 }
 
-function photosView({ photos }) {
-  if (!photos.length) return `<div class="empty">No photos yet.<br>Tap <b>+</b> to add photos of places you've been.</div>`;
+function photosView({ trip, photos }) {
+  if (!photos.length) return `<div class="empty"><div class="big-emoji">📷</div><h3>No photos yet</h3><p>Tap <b>+</b> to add photos of places you've been.</p></div>`;
+  const cover = coverOf(trip, photos);
   photos.sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.createdAt - a.createdAt);
-  return `<div class="grid">${photos.map((p) => `
-    <div class="ph" data-photo="${p.id}" style="background-image:url(${blobUrl(p.blob)})">
-      ${p.place ? `<span>${esc(p.place)}</span>` : ''}</div>`).join('')}</div>`;
+  return `<div class="section-head"><h3>Gallery</h3><span class="muted">${photos.length}</span></div>
+    <div class="photo-grid">${photos.map((p) => `
+    <article class="tile" data-photo="${p.id}" ${bg(p.blob)}>
+      <button class="corner circle glass sm ${p.id === cover?.id ? 'on' : ''}" data-cover="${p.id}" aria-label="Set as cover">${icon('star')}</button>
+      <div class="txt">${p.date ? `<div class="label">${prettyDate(p.date, { month: 'short', day: 'numeric' })}</div>` : ''}
+        ${p.place ? `<div class="name">${esc(p.place)}</div>` : ''}</div>
+    </article>`).join('')}</div>`;
 }
 
 function summaryView({ trip, expenses, entries, photos }) {
   const places = [...new Set([...entries.map((e) => e.place), ...photos.map((p) => p.place)].filter(Boolean))];
   const moods = entries.map((e) => e.mood).filter(Boolean);
-  const topMood = moods.sort((a, b) => moods.filter((m) => m === b).length - moods.filter((m) => m === a).length)[0];
-  const placesCard = places.length
-    ? `<div class="card"><div class="muted">Places visited (${places.length})</div>
-        <div class="chips" style="margin-top:8px">${places.map((p) => `<span class="chip">📍 ${esc(p)}</span>`).join('')}</div></div>`
-    : '';
-  if (!expenses.length) return placesCard + `<div class="empty">Add some expenses to see your spending summary.</div>`;
-
+  const count = (m) => moods.filter((x) => x === m).length;
+  const topMood = [...moods].sort((a, b) => count(b) - count(a))[0];
   const total = sum(expenses);
-  const days = new Set(expenses.map((e) => e.date));
+  const spendDays = new Set(expenses.map((e) => e.date)).size;
+  const tiles = `<div class="amenities">
+    <div class="amenity"><div class="ic">${topMood || '🙂'}</div><b>${topMood ? 'Mood' : '—'}</b><small>Trip mood</small></div>
+    <div class="amenity"><div class="ic">📍</div><b>${places.length}</b><small>Places</small></div>
+    <div class="amenity"><div class="ic">📅</div><b>${tripDays(trip) || spendDays || '—'}</b><small>Days</small></div>
+  </div>`;
+  const placesCard = places.length
+    ? `<div class="panel"><h4>Places visited</h4><div class="chips" style="margin-top:12px">${places.map((p) => `<span class="pill" style="background:var(--mint)">${icon('pin')} ${esc(p)}</span>`).join('')}</div></div>`
+    : '';
+  if (!expenses.length) return `<div class="section-head"><h3>Trip in numbers</h3></div>` + tiles + placesCard;
+
   const byCat = CATEGORIES.map((c) => ({ ...c, sum: sum(expenses.filter((e) => cat(e.category).id === c.id)) }))
     .filter((c) => c.sum > 0).sort((a, b) => b.sum - a.sum);
   const biggest = expenses.reduce((a, b) => (b.amount > a.amount ? b : a));
-  return `
-    <div class="stats">
-      <div class="card"><div class="muted">Per day (avg)</div><div class="big">${money(total / days.size, trip.currency)}</div></div>
-      <div class="card"><div class="muted">${topMood ? 'Trip mood' : 'Days with spending'}</div><div class="big">${topMood || days.size}</div></div>
+  return `<div class="section-head"><h3>Trip in numbers</h3></div>${tiles}
+    <div class="dark-card" data-goto="expenses">
+      <div class="icon-box">${cat(biggest.category).emoji}</div>
+      <div class="info"><div class="label">Biggest expense</div><b>${money(biggest.amount, trip.currency)}</b>
+        <div class="muted">${esc(biggest.note) || cat(biggest.category).label} · ${prettyDate(biggest.date)}</div></div>
+      <span class="circle lime sm">${icon('arrow')}</span>
     </div>
-    <div class="card" style="margin-top:12px">
-      <div class="muted" style="margin-bottom:4px">Spending by category</div>
+    <div class="panel"><h4>Spending by category</h4>
+      <div class="muted">${money(total, trip.currency)} total · ${money(total / spendDays, trip.currency)} per day</div>
       ${byCat.map((c) => `<div class="bar-row">
         <div class="top"><span>${c.emoji} ${c.label}</span><span>${money(c.sum, trip.currency)} · ${Math.round((c.sum / total) * 100)}%</span></div>
         <div class="bar"><div style="width:${(c.sum / byCat[0].sum) * 100}%"></div></div></div>`).join('')}
     </div>
-    <div class="card"><div class="muted">Biggest expense</div>
-      <div style="margin-top:4px"><b>${money(biggest.amount, trip.currency)}</b> · ${esc(biggest.note) || cat(biggest.category).label} · ${prettyDate(biggest.date)}</div></div>
     ${placesCard}`;
 }
 
 // ---------- Bottom sheet ----------
 function openSheet(html) {
-  $('#sheet').innerHTML = html;
+  $('#sheet').innerHTML = `<button class="circle sm sheet-close" aria-label="Close">${icon('x')}</button>` + html;
+  $('#sheet .sheet-close').onclick = closeSheet;
   $('#sheet').hidden = false;
   $('#sheetBackdrop').hidden = false;
   $('#sheet').scrollTop = 0;
@@ -359,10 +523,22 @@ function pickChips(selector, initial, allowNone) {
   return () => value;
 }
 
+function nameForm() {
+  openSheet(`<h2>What's your name?</h2>
+    <form id="f"><div class="field"><input name="name" placeholder="Your name" value="${esc(localStorage.getItem('name') || '')}" autocomplete="given-name"></div>
+    <button class="btn">Save</button></form>`);
+  $('#f').onsubmit = (ev) => {
+    ev.preventDefault();
+    localStorage.setItem('name', new FormData(ev.target).get('name').trim());
+    closeSheet();
+    render();
+  };
+}
+
 function tripForm(trip) {
   const t = trip || { name: '', destination: '', currency: localStorage.getItem('lastCurrency') || 'PHP', budget: '', startDate: today(), endDate: '' };
   openSheet(`
-    <h2>${trip ? 'Edit trip' : 'New trip'}</h2>
+    <h2>${trip ? 'Edit journey' : 'New journey'}</h2>
     <form id="f">
       <div class="field"><label>Trip name</label><input name="name" required placeholder="e.g. Autumn in Japan" value="${esc(t.name)}"></div>
       <div class="field"><label>Destination</label><input name="destination" placeholder="e.g. Tokyo & Kyoto" value="${esc(t.destination)}"></div>
@@ -398,9 +574,12 @@ function tripForm(trip) {
   };
 }
 
+// Default date for new items: the selected day in the strip, else today.
+const defaultDate = () => state.day || today();
+
 // Journal memo with its own photos.
 async function entryForm(trip, entry) {
-  const e = entry || { title: '', text: '', place: '', mood: '', weather: '', date: today(), time: nowTime() };
+  const e = entry || { title: '', text: '', place: '', mood: '', weather: '', date: defaultDate(), time: nowTime() };
   // Photos shown in the form: existing ones (may be removed) and new ones (saved on submit).
   const existing = entry ? (await db.byTrip('photos', trip.id)).filter((p) => p.entryId === entry.id) : [];
   const pics = existing.map((p) => ({ photo: p, url: blobUrl(p.blob), isNew: false }));
@@ -409,7 +588,7 @@ async function entryForm(trip, entry) {
   openSheet(`
     <h2>${entry ? 'Edit memo' : 'New memo'}</h2>
     <form id="f">
-      <div class="field"><input name="title" class="title-input serif" placeholder="Title (e.g. Sunrise at Fushimi Inari)" value="${esc(e.title)}"></div>
+      <div class="field"><input name="title" class="title-input" placeholder="Title (e.g. Sunrise at Fushimi Inari)" value="${esc(e.title)}"></div>
       <div class="field"><textarea name="text" rows="6" placeholder="What happened today? How did it feel?">${esc(e.text)}</textarea></div>
       <div class="field"><label>Photos</label><div id="picRow" class="pic-row"></div></div>
       <div class="field"><label>Place</label><input name="place" placeholder="Where were you?" value="${esc(e.place)}"></div>
@@ -430,8 +609,8 @@ async function entryForm(trip, entry) {
 
   function drawPics() {
     $('#picRow').innerHTML = pics.map((p, i) =>
-      `<div class="pic" style="background-image:url(${p.url})"><button type="button" data-rm="${i}" aria-label="Remove photo">✕</button></div>`).join('')
-      + '<button type="button" id="addPic" class="pic add-pic">＋<small>Add</small></button>';
+      `<div class="pic" style="background-image:url(${p.url})"><button type="button" data-rm="${i}" aria-label="Remove photo">${icon('x')}</button></div>`).join('')
+      + `<button type="button" id="addPic" class="pic add-pic">${icon('camera')}Add</button>`;
     $('#addPic').onclick = () => $('#entryPhotoInput').click();
     $$('[data-rm]').forEach((b) => (b.onclick = () => {
       const [p] = pics.splice(+b.dataset.rm, 1);
@@ -490,7 +669,7 @@ async function entryForm(trip, entry) {
 }
 
 function expenseForm(trip, exp) {
-  const e = exp || { amount: '', category: 'food', note: '', date: today() };
+  const e = exp || { amount: '', category: 'food', note: '', date: defaultDate() };
   openSheet(`
     <h2>${exp ? 'Edit expense' : 'Add expense'}</h2>
     <form id="f">
@@ -524,13 +703,17 @@ function expenseForm(trip, exp) {
   };
 }
 
-// "+" in the Journal tab: choose what to add.
-function addChooser(trip) {
+const menuItem = (a, emoji, label, cls = '') => `<button class="menu-item ${cls}" data-a="${a}"><span class="ic">${emoji}</span>${label}</button>`;
+
+// The "+" button: goes straight to the form for the current tab, or asks in the Journal/Summary tabs.
+function addFor(trip) {
+  if (state.tab === 'expenses') return expenseForm(trip);
+  if (state.tab === 'photos') return $('#photoInput').click();
   openSheet(`
-    <h2>Add to ${esc(trip.name)}</h2>
-    <button class="menu-item" data-a="memo">✍️ Write a memo</button>
-    <button class="menu-item" data-a="expense">💸 Add an expense</button>
-    <button class="menu-item" data-a="photo">📷 Add photos</button>`);
+    <h2>Add to your journal</h2>
+    ${menuItem('memo', '✍️', 'Write a memo')}
+    ${menuItem('expense', '💸', 'Add an expense')}
+    ${menuItem('photo', '📷', 'Add photos')}`);
   $$('.menu-item').forEach((b) => (b.onclick = () => {
     const a = b.dataset.a;
     if (a === 'memo') entryForm(trip);
@@ -544,7 +727,7 @@ $('#photoInput').onchange = async (ev) => {
   const files = [...ev.target.files];
   ev.target.value = '';
   if (!files.length || !state.tripId) return;
-  toast(`Saving ${files.length} photo${files.length > 1 ? 's' : ''}…`);
+  toast(`Saving ${plural(files.length, 'photo')}…`);
   let last;
   for (const f of files) {
     try {
@@ -581,13 +764,21 @@ function photoForm(photo) {
 
 function openViewer(trip, photo) {
   const v = $('#viewer');
+  const isCover = trip.coverPhotoId === photo.id;
   v.innerHTML = `
-    <div class="bar-top"><button id="vClose">✕ Close</button>
-      <span><button id="vCover">Set as cover</button><button id="vEdit">Edit</button><button id="vDel">Delete</button></span></div>
+    <div class="bar-top">
+      <button class="circle glass" id="vClose" aria-label="Close">${icon('x')}</button>
+      <span class="spacer"></span>
+      <button class="circle ${isCover ? 'lime' : 'glass'}" id="vCover" aria-label="Set as cover">${icon('star')}</button>
+      <button class="circle glass" id="vEdit" aria-label="Edit">${icon('edit')}</button>
+      <button class="circle glass" id="vDel" aria-label="Delete">${icon('trash')}</button>
+    </div>
     <img src="${blobUrl(photo.blob)}" alt="">
-    <div class="cap">${photo.place ? `<b>📍 ${esc(photo.place)}</b>` : ''}
+    <div class="cap">
+      ${photo.date ? `<div class="label muted">${prettyDate(photo.date)}</div>` : ''}
+      ${photo.place ? `<b>${esc(photo.place)}</b>` : ''}
       ${photo.caption ? `<div>${esc(photo.caption)}</div>` : ''}
-      <div class="muted">${photo.date ? prettyDate(photo.date) : ''}</div></div>`;
+    </div>`;
   v.hidden = false;
   $('#vClose').onclick = () => (v.hidden = true);
   $('#vEdit').onclick = () => photoForm(photo);
@@ -679,21 +870,19 @@ async function exportJournal(trip) {
   download(file, file.name);
 }
 
-$('#menuBtn').onclick = async () => {
+async function openMenu() {
   const trip = state.tripId && (await db.get('trips', state.tripId));
   openSheet(`
     <h2>Menu</h2>
-    ${trip ? `
-      <button class="menu-item" data-a="edit">✏️ Edit trip details</button>
-      <button class="menu-item" data-a="journal">📖 Share journal as text</button>
-      <button class="menu-item" data-a="csv">📄 Export expenses (CSV)</button>` : ''}
-    <button class="menu-item" data-a="backup">💾 Back up all data</button>
-    <button class="menu-item" data-a="restore">📥 Restore from backup</button>
-    ${trip ? '<button class="menu-item danger" data-a="delete">🗑️ Delete this trip</button>' : ''}`);
+    ${trip ? menuItem('edit', '✏️', 'Edit journey details') + menuItem('journal', '📖', 'Share journal as text') + menuItem('csv', '📄', 'Export expenses (CSV)') : menuItem('name', '👋', 'Change your name')}
+    ${menuItem('backup', '💾', 'Back up all data')}
+    ${menuItem('restore', '📥', 'Restore from backup')}
+    ${trip ? menuItem('delete', '🗑️', 'Delete this journey', 'danger') : ''}`);
   $$('.menu-item').forEach((b) => (b.onclick = async () => {
     closeSheet();
     const a = b.dataset.a;
     if (a === 'edit') tripForm(trip);
+    if (a === 'name') nameForm();
     if (a === 'journal') exportJournal(trip);
     if (a === 'csv') exportCsv(trip);
     if (a === 'backup') exportBackup();
@@ -706,17 +895,9 @@ $('#menuBtn').onclick = async () => {
       go(null);
     }
   }));
-};
+}
 
-$('#backBtn').onclick = () => go(null);
-
-$('#fab').onclick = async () => {
-  if (!state.tripId) return tripForm();
-  const trip = await db.get('trips', state.tripId);
-  if (state.tab === 'photos') return $('#photoInput').click();
-  if (state.tab === 'expenses') return expenseForm(trip);
-  addChooser(trip);
-};
+$('#fab').onclick = () => tripForm();
 
 // ---------- Start ----------
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
