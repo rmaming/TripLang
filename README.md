@@ -20,9 +20,9 @@ all your data stays on your phone.
 
 ## Put it on your phone
 
-1. **Host it (one time):** on GitHub, open the repo's **Settings → Pages**. Under *Build and deployment*,
+1. **Host it (one time):** GitHub Pages on a *private* repo needs GitHub Pro. On a free account, first make the repo public (Settings → General → Danger Zone → Change visibility). That is safe: only the app code is public, your expenses and photos stay on your phone. Then on GitHub, open the repo's **Settings → Pages**. Under *Build and deployment*,
    pick **Deploy from a branch**, choose `main` and `/ (root)`, then click **Save**.
-   After about a minute your app is live at `https://rmaming.github.io/triplang/`.
+   After about a minute your app is live at `https://rmaming.github.io/TripLang/`.
 2. **Install it:**
    - **iPhone (Safari):** open the link, tap **Share**, then **Add to Home Screen**.
    - **Android (Chrome):** open the link, tap **⋮**, then **Install app** (or **Add to Home screen**).
